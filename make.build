@@ -1,0 +1,80 @@
+#TODO: Think on the possibility of having libs and elfs automatically moved to an out dir (as with object files).
+#And the install target will only be used when some INSTALL_DIR is defined, which might only make sense when the target is not the HOST.
+ 
+
+#For now static and dynamic libs are treated equally, but it is likely to
+#change since does not make sense to install static libraries on a target!
+define do_install
+	$(shell if [ -n "$(ELF)" ] ; then
+			install -m 775 $(ELF) $(INSTALL_DIR);
+                elif [ -n "$(LIB_STATIC)" ] ; then
+                        install -m 775 $(LIB_STATIC) $(INSTALL_LIB_DIR);
+                elif [ -n "$(LIB_DYNAMIC)" ] ; then
+                        install -m 775 $(LIB_DYNAMIC) $(INSTALL_LIB_DIR);
+	fi)
+endef
+
+define do_clean
+clean_bin:
+	@if [ -f "$(1)" ]; then \
+		$(_CLEAN_BIN); \
+		rm -f $(1); \
+	fi
+endef
+
+#generic rules
+$(ELF): $(OBJS)
+	@$(_LD)
+	@$(CC) -o $(ELF) $(OBJS) $(LDFLAGS) $(LIBS)
+
+$(LIB_STATIC): $(OBJS)
+	@$(_AR)
+	@$(AR) -rcs $@ $(OBJS)
+
+clean: clean_obj clean_bin
+
+install:
+	@$(_INSTALL)
+	$(call do_install)
+
+#the for loop is just for convenience, to see all the OBJS being removed
+clean_obj:
+	@for obj in $(OBJS); do \
+		if [ -f $$obj ]; then \
+			$(_CLEAN); \
+			rm -f $$obj; \
+		fi \
+	done
+
+#define a generic clean target
+ifneq ($(strip $(ELF)),)
+$(eval $(call do_clean,$(ELF)))
+else ifneq ($(strip $(LIB_STATIC)),)
+$(eval $(call do_clean,$(LIB_STATIC)))
+else ifneq ($(strip $(LIB_DYNAMIC)),)
+$(eval $(call do_clean,$(LIB_DYNAMIC)))
+endif
+
+#pattern rules
+$(OUT_OBJ_DIR)/%.o: %.c
+	@$(_CC)
+	@$(CC) $(CFLAGS) -c -o $@ $<
+
+$(OUT_OBJ_DIR)/%.o: %.cpp
+	@$(_CXX)
+	@$(CXX) $(CFLAGS) -c -o $@ $<
+
+# "|" means that the rule are order-only rules, meaning that it is imposing an ordering to build the target (dirs must exist),
+# but does not force the target to be updated if one of these rules are executed (which for dirs is handy since the timestamps are changing whenever a file 
+# is added/removed or changed) 
+$(OBJS): | $(OUT_BIN_DIR) $(OUT_LIB_DIR) $(OUT_OBJ_DIR) 
+
+$(OUT_BIN_DIR):
+	@mkdir -p $(OUT_BIN_DIR)
+
+$(OUT_LIB_DIR):
+	@mkdir -p $(OUT_LIB_DIR)
+
+$(OUT_OBJ_DIR):
+	@mkdir -p $(OUT_OBJ_DIR)
+
