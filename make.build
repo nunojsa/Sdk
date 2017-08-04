@@ -1,19 +1,4 @@
-#TODO: Think on the possibility of having libs and elfs automatically moved to an out dir (as with object files).
-#And the install target will only be used when some INSTALL_DIR is defined, which might only make sense when the target is not the HOST.
- 
-
-#For now static and dynamic libs are treated equally, but it is likely to
-#change since does not make sense to install static libraries on a target!
-define do_install
-	$(shell if [ -n "$(ELF)" ] ; then
-			install -m 775 $(ELF) $(INSTALL_DIR);
-                elif [ -n "$(LIB_STATIC)" ] ; then
-                        install -m 775 $(LIB_STATIC) $(INSTALL_LIB_DIR);
-                elif [ -n "$(LIB_DYNAMIC)" ] ; then
-                        install -m 775 $(LIB_DYNAMIC) $(INSTALL_LIB_DIR);
-	fi)
-endef
-
+#generic targets for clean and install
 define do_clean
 clean_bin:
 	@if [ -f "$(1)" ]; then \
@@ -22,7 +7,15 @@ clean_bin:
 	fi
 endef
 
-#generic rules
+define do_install
+install:
+	@if [ ! -f "$(2)/$(1)" ]; then \
+		$(_INSTALL); \
+		install -m 775 $(OUT_LIB_DIR)/$(1) $(2); \
+	fi
+endef
+
+#generic rules.
 $(ELF): $(OBJS)
 	@$(_LD)
 	@$(CC) -o $(ELF) $(OBJS) $(LDFLAGS) $(LIBS)
@@ -32,10 +25,6 @@ $(LIB_STATIC): $(OBJS)
 	@$(AR) -rcs $@ $(OBJS)
 
 clean: clean_obj clean_bin
-
-install:
-	@$(_INSTALL)
-	$(call do_install)
 
 #the for loop is just for convenience, to see all the OBJS being removed
 clean_obj:
@@ -49,10 +38,13 @@ clean_obj:
 #define a generic clean target
 ifneq ($(strip $(ELF)),)
 $(eval $(call do_clean,$(ELF)))
+$(eval $(call do_install,$(notdir $(ELF)),$(INSTALL_BIN_DIR)))
 else ifneq ($(strip $(LIB_STATIC)),)
 $(eval $(call do_clean,$(LIB_STATIC)))
+$(eval $(call do_install,$(notdir $(LIB_STATIC)),$(INSTALL_LIB_DIR)))
 else ifneq ($(strip $(LIB_DYNAMIC)),)
 $(eval $(call do_clean,$(LIB_DYNAMIC)))
+$(eval $(call do_install,$(notdir $(LIB_DYNAMIC)),$(INSTALL_LIB_DIR)))
 endif
 
 #pattern rules
