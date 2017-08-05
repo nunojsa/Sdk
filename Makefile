@@ -6,12 +6,12 @@ WHITE:='\033[1;37m'
 NC:='\033[0m'
 
 ifeq ($(strip $(BUILD_ROOT)),)
-message:=$(shell echo -e $(RED)Make sure you run "source setup.sh"$(NC))
+message:=$(shell echo -e $(RED)Make sure you run "source scripts/env-setup.sh"$(NC))
 $(error $(message))
 endif
 
 ifeq ($(strip $(SCRIPTS_DIR)),)
-message:=$(shell echo -e $(RED)Make sure you run "source setup.sh"$(NC))
+message:=$(shell echo -e $(RED)Make sure you run "source scripts/env-setup.sh"$(NC))
 $(error $(message))
 endif
 
@@ -102,13 +102,11 @@ install_libs_check:
 		echo -e "$(RED)[ERROR]: INSTALL_LIB_DIR does not exist. Run help_me on your shell to see how to properly add it$(NC)"; \
 		exit 2; \
 	fi
-	@echo "and=$$INSTALL_LIB_DIR"
 install_apps_check:
 	@if [ ! -d "$(INSTALL_BIN_DIR)" ]; then \
 		echo "O=$(INSTALL_BIN_DIR)"; \
 		echo -e "$(RED)[ERROR] INSTALL_BIN_DIR does not exist. Run help_me on your shell to see how to properly add it$(NC)"; \
 		exit 2; \
 	fi
-	@echo "Worked=$(INSTALL_BIN_DIR)"
 help:
 	@echo "No help for you yet!!"

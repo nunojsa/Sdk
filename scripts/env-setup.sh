@@ -5,6 +5,28 @@ WHITE='\033[1;37m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+
+function __include_all()
+{
+	local SRCS_DIR=${BUILD_ROOT}/src/
+	local dir="";
+	local subdir="";
+
+	pushd ${SRCS_DIR} 1>/dev/null;
+	
+	for dir in $(find . -maxdepth 1 -mindepth 1 -type d -printf '%f ')
+	do
+		pushd ${dir} 1>/dev/null;
+		for subdir in $(find . -maxdepth 1 -mindepth 1 -type d -printf '%f ')
+		do
+			touch ${subdir}/.detect;
+		done
+		popd 1>/dev/null;	
+	done
+
+	popd 1>/dev/null;
+}
+
 function __setup_common()
 {
 	#may be overriden if --outdir is given
@@ -235,3 +257,6 @@ clean_env;
 export BUILD_ROOT=$(gettop);
 export SCRIPTS_DIR=${BUILD_ROOT}/scripts;
 chmod u+x -R ${SCRIPTS_DIR}/
+
+#by default all libraries and applications are included in the build. This is better tunned when a target build is selected!
+__include_all;
