@@ -87,26 +87,36 @@ clean_test:
 	@$(MAKE) -C $(TEST_DIR) clean
 
 clean: clean_src clean_test
-	
-install_apps: install_apps_check
-	@$(MAKE) -C $(APPS_DIR) install
 
-install_libs: install_libs_check
-	@$(MAKE) -C $(LIBS_DIR) install
+clean_install_libs:
+	@$(MAKE) -C $(LIBS_DIR) clean_install
+
+clean_install_apps:
+	@$(MAKE) -C $(APPS_DIR) clean_install
+
+clean_install: clean_install_libs clean_install_apps 
+
+distclean:
+	@$(MAKE) -C $(LIBS_DIR) distclean
+	@$(MAKE) -C $(APPS_DIR) distclean
+	@$(MAKE) -C $(TEST_DIR) distclean
+	@rm -rf $(OUT_DIR)
+
+install_apps:
+	@if [ -d "$(INSTALL_BIN_DIR)" ]; then \
+		$(MAKE) -C $(APPS_DIR) install; \
+	else \
+		echo -e $(WHITE)[ERROR]: INSTALL_BIN_DIR does not exist. Run help_me on your shell to see how to properly add it$(NC); \
+	fi
+
+install_libs:
+	@if [ -d "$(INSTALL_LIB_DIR)" ]; then \
+		$(MAKE) -C $(LIBS_DIR) install; \
+	else \
+		echo -e $(WHITE)[ERROR]: INSTALL_LIB_DIR does not exist. Run help_me on your shell to see how to properly add it$(NC); \
+	fi
 
 install: install_libs install_apps
 
-install_libs_check:
-	@if [ ! -d "$(INSTALL_LIB_DIR)" ]; then \
-		echo "O="$(INSTALL_LIB_DIR)" I=$$INSTALL_LIB_DIR"; \
-		echo -e "$(RED)[ERROR]: INSTALL_LIB_DIR does not exist. Run help_me on your shell to see how to properly add it$(NC)"; \
-		exit 2; \
-	fi
-install_apps_check:
-	@if [ ! -d "$(INSTALL_BIN_DIR)" ]; then \
-		echo "O=$(INSTALL_BIN_DIR)"; \
-		echo -e "$(RED)[ERROR] INSTALL_BIN_DIR does not exist. Run help_me on your shell to see how to properly add it$(NC)"; \
-		exit 2; \
-	fi
 help:
 	@echo "No help for you yet!!"

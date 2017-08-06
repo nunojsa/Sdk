@@ -5,6 +5,8 @@ _CLEAN=echo     "	CLEAN	`echo $$obj | sed -e 's/.*\///'`"
 _CLEAN_BIN=echo "	CLEAN	$(notdir $(1))"
 _AR=echo        "	AR	$(notdir $@)"
 _INSTALL=echo   "	INSTALL	$(notdir $(shell pwd))"
+_UNINSTALL=echo "	UNINSTALL $(notdir $(shell pwd))"
+_DISTCLEAN=echo "	RM	$(OUT_DIR)"
 
 #default dirs.
 ifneq ($(strip $(LOCAL_OUT_DIR)),)

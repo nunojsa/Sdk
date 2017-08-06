@@ -7,11 +7,18 @@ clean_bin:
 	fi
 endef
 
-define do_install
-install:
-	@if [ ! -f "$(2)/$(1)" ]; then \
-		$(_INSTALL); \
-		install -m 775 $(OUT_LIB_DIR)/$(1) $(2); \
+define do_x_install
+$(1):
+	@if [ "$(1)" == "install" ]; then \
+		if [ ! -f "$(3)/$(2)" ]; then \
+			$(_INSTALL); \
+			install -m 775 $(4)/$(2) $(3); \
+		fi \
+	else \
+		if [ -f "$(3)/$(2)" ]; then \
+			$(_UNINSTALL); \
+			rm -f $(3)/$(2); \
+                fi \
 	fi
 endef
 
@@ -38,15 +45,23 @@ clean_obj:
 #define a generic clean target
 ifneq ($(strip $(ELF)),)
 $(eval $(call do_clean,$(ELF)))
-$(eval $(call do_install,$(notdir $(ELF)),$(INSTALL_BIN_DIR)))
+$(eval $(call do_x_install,install,$(notdir $(ELF)),$(INSTALL_BIN_DIR),$(OUT_BIN_DIR)))
+$(eval $(call do_x_install,clean_install,$(notdir $(ELF)),$(INSTALL_LIB_DIR)))
 else ifneq ($(strip $(LIB_STATIC)),)
 $(eval $(call do_clean,$(LIB_STATIC)))
-$(eval $(call do_install,$(notdir $(LIB_STATIC)),$(INSTALL_LIB_DIR)))
+$(eval $(call do_x_install,install,$(notdir $(LIB_STATIC)),$(INSTALL_LIB_DIR),$(OUT_LIB_DIR)))
+$(eval $(call do_x_install,clean_install,$(notdir $(LIB_STATIC)),$(INSTALL_LIB_DIR)))
 else ifneq ($(strip $(LIB_DYNAMIC)),)
 $(eval $(call do_clean,$(LIB_DYNAMIC)))
-$(eval $(call do_install,$(notdir $(LIB_DYNAMIC)),$(INSTALL_LIB_DIR)))
+$(eval $(call do_x_install,install,$(notdir $(LIB_DYNAMIC)),$(INSTALL_LIB_DIR),$(OUT_LIB_DIR)))
+$(eval $(call do_x_install,clean_install,$(notdir $(LIB_DYNAMIC)),$(INSTALL_LIB_DIR)))
 endif
 
+distclean:
+	@if [ -d "$(OUT_DIR)" ]; then \
+		$(_DISTCLEAN); \
+		rm -rf $(OUT_DIR); \
+	fi
 #pattern rules
 $(OUT_OBJ_DIR)/%.o: %.c
 	@$(_CC)

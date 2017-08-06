@@ -1,2 +1,0 @@
-tmp_subdir_list := $(shell egrep -L ^Detect */.detect 2> /dev/null)
-ALL_SUBDIRS := $(subst /.detect,,$(tmp_subdir_list))

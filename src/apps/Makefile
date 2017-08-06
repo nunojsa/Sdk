@@ -1,8 +1,2 @@
-CUR_DIR=$(shell pwd)
-
-#todo-dummy target for now
-all:
-
-install:
-
-clean:
+#Includes all the commom (between apps and lins) targets
+include $(BUILD_ROOT)/make.recursive
