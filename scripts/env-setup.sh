@@ -1,10 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 
 RED='\033[0;31m'
 WHITE='\033[1;37m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+TARGETS=( HOST RPI )
 
 function __include_all()
 {
@@ -25,6 +26,18 @@ function __include_all()
 	done
 
 	popd 1>/dev/null;
+}
+
+function __is_supported_target()
+{
+	local target=""
+	
+	for target in ${TARGETS[*]}
+	do
+		[ "${1}" == "${target}" ] && return 0;
+	done
+
+	return 1;
 }
 
 function __setup_common()
@@ -95,6 +108,8 @@ function __process_args()
 			__check_ownerchip "${2}";		
 			[ $? == 1 ] && return;
 			export ROOT_DIR=$(realpath ${2})/;
+			[[ -n "${INSTALL_LIB_DIR}" && -n "${INSTALL_BIN_DIR}" ]] && { \
+			       	echo -e "${WHITE}[WARNING]: Roodir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
 		;;
 		"--outdir")
 			[ ! -d "${2}" ] && {echo -e "${RED}[ERROR]: Invalid out dir="$2"", return };
@@ -102,11 +117,53 @@ function __process_args()
                         [ $? == 1 ] && return;
 			export OUT_DIR=$(realpath ${2})/;		
 		;;
+		"--libdir")
+			[ ! -d "${2}" ] && {echo -e "${RED}[ERROR]: Invalid lib dir="$2"", return };
+                        __check_ownerchip "${2}";
+                        [ $? == 1 ] && return;
+                        export INSTALL_LIB_DIR=$(realpath ${2})/;
+			[[ -n "${ROOT_DIR}" && -n "${INSTALL_BIN_DIR}" ]] && { \
+                                echo -e "${WHITE}[WARNING]: Roodir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
+		;;
+		"--bindir")
+			[ ! -d "${2}" ] && {echo -e "${RED}[ERROR]: Invalid bin dir="$2"", return };
+                        __check_ownerchip "${2}";
+                        [ $? == 1 ] && return;
+                        export INSTALL_BIN_DIR=$(realpath ${2})/;
+			[[ -n "${INSTALL_LIB_DIR}" && -n "${ROOT_DIR}" ]] && { \
+                               	echo -e "${WHITE}[WARNING]: Roodir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
+
+		;;
 		*)
 			echo -e "${RED}[ERROR]: Invalid key=${1}${NC}";	
 		;;
 	esac	
 }	
+
+function __add_target_complete()
+{
+	local cur="${COMP_WORDS[COMP_CWORD]}";
+	local last="${COMP_WORDS[COMP_CWORD-1]}";
+	local opts=('--rootdir=' '--outdir=' '--libdir=' '--bindir=' HOST RPI);	
+	
+	#at this point we want to autocomplete with directories
+	if [[ "${cur}" == "=" || "${last}" == "=" ]]
+	then
+		#echo "wait now for dir, cur=${cur}";
+		compopt -o filenames;
+		if [ "${cur}" == "=" ]; then
+			COMPREPLY=( $(compgen -d) );
+		else
+			COMPREPLY=( $(compgen -d -- ${cur}) );
+		fi
+
+		return 0;
+	fi
+	
+	[ -n "$(echo "${cur}" | egrep '^--')" ] && compopt -o nospace;
+	COMPREPLY=( $(compgen -W "${opts[*]}" -- ${cur}) );
+	return 0;	
+}
 
 ##based on aosp
 ##xargs 0 tells that the inputs are terminated by null char and not whitespace. Important because of -print0
@@ -162,10 +219,10 @@ function croot()
 function clean_env()
 {
 	export TARGET_BUILD=""
-	export BUILD_ROOT=""
 	export OUT_DIR=""
 	export ROOT_DIR=""
-	export SCRIPTS_DIR=""
+	export INSTALL_LIB_DIR=""
+	export INSTALL_BIN_DIR=""
 	export AR=""
 	export AS=""
 	export LD=""
@@ -185,18 +242,51 @@ function help_me()
 	echo "no help for you yet!"
 }
 
-#TODO: Add autocomplete functionality
+function add_compilable()
+{
+	local tmp="";
+	local dir="";
+	if [ ! -d "${1}" ]; then
+		echo -e "${RED}Invalid directory ${1}${NC}";
+		return 1;
+	fi
+
+	tmp=$(realpath "${1}" --relative-to="${BUILD_ROOT}" | awk -F"/" '{print $1}');
+	
+	[ "${tmp}" == ".." ] && { echo -e "${WHITE}[WARNING]: "$1" is not a directory under the Sdk root directory${NC}"; return 1; }
+
+	dir=$(echo "${1}" | sed -e 's/\/$//');
+	touch ${dir}/.detect;	
+}
+
 function add_target_build()
 {
-	[ $# -ge 1 ] || { echo "[ERROR}: Invalid number of parameters"; return 1; }
+	[ $# -ge 1 ] || { echo "[ERROR]: Invalid number of parameters"; return 1; }
 	local arg="";
 	local key="";
 	local value="";
-	#For now is assumed that the target is alwas the last argument
-	local target='${'$#'}';
-	eval target=${target};
+	#For now is assumed that the target is always the last argument
+	local target="";
+	local error="";
 
-
+	###look for passed arguments
+        for arg in $@
+        do
+		__is_supported_target ${arg};
+                [ $? == "0" ] && { \
+			if [ -n "${target}" ]; then
+				echo -e "${RED}[ERROR]: More than one valid target passed on the argument list! Args="$@"${NC}";
+				error=y;
+				break;
+			fi
+			target=${arg}; continue; }
+                key=$(echo "${arg}" | cut -d"=" -f1);
+                value=$(echo "${arg}" | cut -d"=" -f2);
+                __process_args "${key}" "${value}";
+        done
+	
+	[ "${error}" == "y" ] && { clean_env; return 1; }
+	
 	case "${target}" in 
 	
 		"HOST")
@@ -208,21 +298,14 @@ function add_target_build()
 		;;	
 		*)
 			echo -e "${RED}[ERROR]: Unknown TARGET to build for:${1}!${NC}";
+			clean_env;
 			return 1;
 		;;
 	esac
-	
-	###look for passed arguments
-	for arg in $@
-	do
-		[ "${arg}" == "${target}" ] && break;
-		key=$(echo "${arg}" | cut -d"=" -f1);
-		value=$(echo "${arg}" | cut -d"=" -f2);
-		__process_args "${key}" "${value}";
-	done
-	
-	return 0;
+		
+	return 0
 }
+complete -F __add_target_complete add_target_build;
 
 function print_env()
 {

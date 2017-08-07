@@ -106,14 +106,14 @@ install_apps:
 	@if [ -d "$(INSTALL_BIN_DIR)" ]; then \
 		$(MAKE) -C $(APPS_DIR) install; \
 	else \
-		echo -e $(WHITE)[ERROR]: INSTALL_BIN_DIR does not exist. Run help_me on your shell to see how to properly add it$(NC); \
+		echo -e $(WHITE)[WARNING]: INSTALL_BIN_DIR does not exist. Run help_me on your shell to see how to properly add it!$(NC); \
 	fi
 
 install_libs:
 	@if [ -d "$(INSTALL_LIB_DIR)" ]; then \
 		$(MAKE) -C $(LIBS_DIR) install; \
 	else \
-		echo -e $(WHITE)[ERROR]: INSTALL_LIB_DIR does not exist. Run help_me on your shell to see how to properly add it$(NC); \
+		echo -e $(WHITE)[WARNING]: INSTALL_LIB_DIR does not exist. Run help_me on your shell to see how to properly add it!$(NC); \
 	fi
 
 install: install_libs install_apps
