@@ -39,8 +39,9 @@ clean_obj:
 		if [ -f $$obj ]; then \
 			$(_CLEAN); \
 			rm -f $$obj; \
-		fi \
+		fi; \
 	done
+	@rm -f $(OBJS:.o=.d)
 
 #define a generic clean target
 ifneq ($(strip $(ELF)),)
@@ -62,6 +63,7 @@ distclean:
 		$(_DISTCLEAN); \
 		rm -rf $(OUT_DIR); \
 	fi
+
 #pattern rules
 $(OUT_OBJ_DIR)/%.o: %.c
 	@$(_CC)
@@ -70,6 +72,21 @@ $(OUT_OBJ_DIR)/%.o: %.c
 $(OUT_OBJ_DIR)/%.o: %.cpp
 	@$(_CXX)
 	@$(CXX) $(CFLAGS) -c -o $@ $<
+
+#automatic prerequisites generation. Look to section 4.14 of GNU Make
+#Using the -MM (dont include compiler headers) option which is supported by the GNU compiler. Might be an issue for other compilers...
+$(OUT_OBJ_DIR)/%.d: %.c
+	@set -e; rm -f $@; \
+	$(CC) -MM $(CPPFLAGS) $(CFLAFS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,$(OUT_OBJ_DIR)\/\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+$(OUT_OBJ_DIR)/%.d: %.cpp
+	@set -e; rm -f $@; \
+	$(CC) -MM $(CPPFLAGS) $(CFLAGS) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,$(OUT_OBJ_DIR)\/\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
 
 # "|" means that the rule are order-only rules, meaning that it is imposing an ordering to build the target (dirs must exist),
 # but does not force the target to be updated if one of these rules are executed (which for dirs is handy since the timestamps are changing whenever a file 
@@ -85,3 +102,4 @@ $(OUT_LIB_DIR):
 $(OUT_OBJ_DIR):
 	@mkdir -p $(OUT_OBJ_DIR)
 
+include $(OBJS:.o=.d)

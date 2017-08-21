@@ -4,6 +4,7 @@
 *.vpw
 *.vtg
 *.vpwhistu
+*.d
 *.o
 *.a
 *.so

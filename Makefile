@@ -6,12 +6,12 @@ WHITE:='\033[1;37m'
 NC:='\033[0m'
 
 ifeq ($(strip $(BUILD_ROOT)),)
-message:=$(shell echo -e $(RED)Make sure you run "source scripts/env-setup.sh"$(NC))
+message:=$(shell echo -e $(RED)Make sure you run \"source scripts/env-setup.sh\"$(NC))
 $(error $(message))
 endif
 
 ifeq ($(strip $(SCRIPTS_DIR)),)
-message:=$(shell echo -e $(RED)Make sure you run "source scripts/env-setup.sh"$(NC))
+message:=$(shell echo -e $(RED)Make sure you run \"source scripts/env-setup.sh\"$(NC))
 $(error $(message))
 endif
 
