@@ -19,6 +19,14 @@ else
 endif
 endif
 
+#Check if this path is defined. If not, we are probably just compiling a single module and it was not
+#exported by the main Makefile.
+ifeq ($(strip $(OUT_OBJ_DIR:)),)
+	OUT_OBJ_DIR:=$(OUT_DIR)obj
+	OUT_LIB_DIR:=$(OUT_DIR)lib
+	OUT_BIN_DIR:=$(OUT_DIR)bin
+endif
+
 ifneq ($(strip $(ELF)),)
 ELF:=$(addprefix $(OUT_BIN_DIR)/,$(ELF))
 endif
