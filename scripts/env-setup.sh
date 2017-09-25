@@ -311,6 +311,9 @@ function print_env()
 {
 	echo "TARGET=${TARGET_BUILD}";
 	echo "BUILD_ROOT=${BUILD_ROOT}";
+	echo "APPS_DIR=${APPS_DIR}";
+	echo "LIBS_DIR=${LIBS_DIR}";
+	echo "TEST_DIR=${TEST_DIR}";
 	echo "SCRIPTS=${SCRIPTS_DIR}";
 	echo "CC=${CC}";
 	echo "CXX=${CXX}";
@@ -339,6 +342,10 @@ clean_env;
 
 export BUILD_ROOT=$(gettop);
 export SCRIPTS_DIR=${BUILD_ROOT}/scripts;
+export LIBS_DIR=${BUILD_ROOT}/src/libs;
+export APPS_DIR=${BUILD_ROOT}/src/apps;
+export TEST_DIR=${BUILD_ROOT}/test;
+
 chmod u+x -R ${SCRIPTS_DIR}/
 
 #by default all libraries and applications are included in the build. This is better tunned when a target build is selected!

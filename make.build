@@ -23,7 +23,7 @@ $(1):
 endef
 
 #generic rules.
-$(ELF): $(OBJS)
+$(ELF): $(OBJS) $(LINKLIBS)
 	@$(_LD)
 	@$(CC) -o $(ELF) $(OBJS) $(LDFLAGS) $(LIBS)
 

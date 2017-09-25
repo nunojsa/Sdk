@@ -1,6 +1,3 @@
-APPS_DIR:=$(BUILD_ROOT)/src/apps
-LIBS_DIR:=$(BUILD_ROOT)/src/libs
-TEST_DIR:=$(BUILD_ROOT)/test
 RED:='\033[0;31m'
 WHITE:='\033[1;37m'
 NC:='\033[0m'
@@ -46,8 +43,6 @@ endif
 export OUT_OBJ_DIR:=$(OUT_DIR)obj
 export OUT_BIN_DIR:=$(OUT_DIR)bin
 export OUT_LIB_DIR:=$(OUT_DIR)lib
-export LIBS_DIR
-export APPS_DIR
 #setup install directories
 ifneq ($(strip $(ROOT_DIR)),)	
 ifeq ($(strip $(INSTALL_BIN_DIR)),)
