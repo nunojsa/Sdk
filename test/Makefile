@@ -1,6 +1,6 @@
-LIBS:=-llog
+LIBS:=-lutils
 ELF:=logger_test
-LINKLIBS:=$(OUT_DIR)lib/liblog.a 
+LINKLIBS:=$(OUT_DIR)lib/libutils.a 
 
 #-static prevents linking against shared library
 LDFLAGS:=-static -L$(OUT_DIR)/lib  
