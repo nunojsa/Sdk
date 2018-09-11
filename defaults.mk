@@ -45,6 +45,6 @@ ifeq ($(strip $(LOCAL_OBJS)),)
 endif
 
 ifeq ($(strip $(LOCAL_CFLAGS)),)
-	CFLAGS+=-O -Werror -Wall
+	CFLAGS+=-O2 -Werror -Wall -Wextra
 endif
 
