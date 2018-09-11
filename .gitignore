@@ -1,5 +1,5 @@
-**/bin/
 /src/**/.detect
+test/out
 *.vpj
 *.vpw
 *.vtg
@@ -11,3 +11,5 @@
 *.tar
 *.zip
 *.log
+.ycm_extra_conf.py
+tags
