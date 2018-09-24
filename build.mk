@@ -77,7 +77,7 @@ $(OUT_OBJ_DIR)/%.o: %.cpp
 #Using the -MM (dont include compiler headers) option which is supported by the GNU compiler. Might be an issue for other compilers...
 $(OUT_OBJ_DIR)/%.d: %.c
 	@set -e; rm -f $@; \
-	$(CC) -MM $(CPPFLAGS) $(CFLAFS) $< > $@.$$$$; \
+	$(CC) -MM $(CPPFLAGS) $(CFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,$(OUT_OBJ_DIR)\/\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
