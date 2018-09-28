@@ -1,4 +1,5 @@
-#include all default targets for libraries and apps. It is included in libs and apps Makefile to avoid duplication of the targets since the Makefiles should be identical!
+# include all default targets for libraries and apps. It is included in libs and apps Makefile
+# to avoid duplication of the targets since the Makefiles should be identical!
 tmp_subdir_list := $(shell egrep -L ^Detect */.detect 2> /dev/null)
 SUBDIRS := $(subst /.detect,,$(tmp_subdir_list))
 
@@ -15,6 +16,5 @@ endef
 $(eval $(call do_task,all))
 $(eval $(call do_task,clean,clean))
 $(eval $(call do_task,install,install))
-$(eval $(call do_task,clean_install,clean_install))
-$(eval $(call do_task,distclean,distclean))
+$(eval $(call do_task,uninstall,uninstall))
 

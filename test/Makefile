@@ -1,13 +1,10 @@
-LIBS:=-lutils
-ELF:=logger_test
-LINKLIBS:=$(OUT_DIR)lib/libutils.a 
+LIBS:=$(OUT_DIR)/host/lib/libutils.a
+BIN:=logger_test
 
-#-static prevents linking against shared library
-LDFLAGS:=-static -L$(OUT_DIR)/lib  
-CFLAGS:=-I$(BUILD_ROOT)/src/libs/utils
+LOCAL_OBJS:=logger_test.o
+# -static prevents linking against shared library
+LDFLAGS:=-static
+INCLUDES:=-I$(BUILD_ROOT)/src/libs/utils
 
-LOCAL_OUT_DIR:=y
-include $(BUILD_ROOT)/defaults.mk
-include $(BUILD_ROOT)/build.mk
-
+include $(BUILD_ROOT)/build/host_build.mk
 

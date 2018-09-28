@@ -54,6 +54,22 @@ function __create_out_dirs()
 	mkdir -p "${OUT_DIR}/${1}/obj"
 }
 
+function __setup_common()
+{
+	__create_out_dirs "${1}"
+
+	# handle rootdir
+	if [ -n "${ROOT_DIR}" ] && [ -z "${INSTALL_BIN_DIR}" ]; then
+		mkdir -p "${ROOT_DIR}/usr/bin"
+		export INSTALL_BIN_DIR="${ROOT_DIR}usr/bin/"
+	fi
+
+	if [ -n "${ROOT_DIR}" ] && [ -z "${INSTALL_LIB_DIR}" ]; then
+		mkdir -p "${ROOT_DIR}/usr/lib"
+		export INSTALL_LIB_DIR="${ROOT_DIR}usr/lib/"
+	fi
+}
+
 function __setup_compiler()
 {
 	hash "${1}"gcc 2>/dev/null || { echo "Make sure you have ${1}gcc on your system!!!"; return 1; }
@@ -83,8 +99,8 @@ function __setup_host()
 	[ $? == 1 ] && return 1;
 	# if the target is the host, then we just need
 	# to call this once
-	__create_out_dirs host;
-	export TARGET_BUILD=HOST
+	__setup_common host;
+	export TARGET_BUILD=host
 
 	return 0;
 }
@@ -130,7 +146,7 @@ function __process_args()
                         [ $? == 1 ] && return 1;
                         export INSTALL_LIB_DIR="$(realpath ${2})/";
 			[[ -n "${ROOT_DIR}" && -n "${INSTALL_BIN_DIR}" ]] && { \
-                                echo -e "${WHITE}[WARNING]: Roodir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
+                                echo -e "${WHITE}[WARNING]: Rootdir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
 		;;
 		"--bindir")
 			[ ! -d "${2}" ] && { echo -e "${RED}[ERROR]: Make sure to create bindir=\"$2\"${NC}"; return 1; }
@@ -138,7 +154,7 @@ function __process_args()
                         [ $? == 1 ] && return 1;
                         export INSTALL_BIN_DIR="$(realpath ${2})/";
 			[[ -n "${INSTALL_LIB_DIR}" && -n "${ROOT_DIR}" ]] && { \
-				echo -e "${WHITE}[WARNING]: Roodir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
+				echo -e "${WHITE}[WARNING]: Rootdir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
 
 		;;
 		*)
@@ -227,23 +243,23 @@ function croot()
 
 function clean_env()
 {
-	export TARGET_BUILD=""
-	export OUT_DIR=""
-	export ROOT_DIR=""
-	export INSTALL_LIB_DIR=""
-	export INSTALL_BIN_DIR=""
-	export AR=""
-	export AS=""
-	export LD=""
-	export CC=""
-	export CXX=""
-	export CPP=""
-	export NM=""
-	export STRIP=""
-	export SSTRIP=""
-	export OBJCOPY=""
-	export OBJDUMP=""
-	export RANLIB=""
+	export TARGET_BUILD=''
+	export OUT_DIR=''
+	export ROOT_DIR=''
+	export INSTALL_LIB_DIR=''
+	export INSTALL_BIN_DIR=''
+	export AR=''
+	export AS=''
+	export LD=''
+	export CC=''
+	export CXX=''
+	export CPP=''
+	export NM=''
+	export STRIP=''
+	export SSTRIP=''
+	export OBJCOPY=''
+	export OBJDUMP=''
+	export RANLIB=''
 }
 
 function help_me()
@@ -333,17 +349,8 @@ function print_env()
 	echo "LD=${LD}";
 	echo "OUT_DIR=${OUT_DIR}";
 	echo "ROOT_DIR=${ROOT_DIR}";
-	if [ -n "${INSTALL_LIB_DIR}" ]; then
-		echo "INSTALL_LIB_DIR=${INSTALL_LIB_DIR}"
-	elif [ -n "${ROOT_DIR}" ]; then
-		echo "INSTALL_LIB_DIR=${ROOT_DIR}usr/lib";
-	fi
-
-	if [ -n "${INSTALL_BIN_DIR}" ]; then
-		echo "INSTALL_BIN_DIR=${INSTALL_BIN_DIR}";
-        elif [ -n "${ROOT_DIR}" ]; then
-		echo "INSTALL_BIN_DIR=${ROOT_DIR}usr/bin";
-	fi
+	echo "INSTALL_LIB_DIR=${INSTALL_LIB_DIR}"
+	echo "INSTALL_BIN_DIR=${INSTALL_BIN_DIR}";
 }
 
 if [ "$UID" -eq "0" ]
