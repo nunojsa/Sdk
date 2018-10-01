@@ -8,3 +8,13 @@ INCLUDES:=-I$(BUILD_ROOT)/src/libs/utils
 
 include $(BUILD_ROOT)/build/host_build.mk
 
+# clean variables
+include $(BUILD_ROOT)/build/clean_vars.mk
+
+BIN:=dlink_list
+
+LOCAL_OBJS:=dlink_list.o
+INCLUDES:=-I$(BUILD_ROOT)/src/libs/utils -I$(BUILD_ROOT)/src/include
+
+include $(BUILD_ROOT)/build/host_build.mk
+
