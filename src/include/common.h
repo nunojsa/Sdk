@@ -25,6 +25,12 @@ typedef int		s32;
 typedef unsigned long	u64;
 typedef long		s64;
 
+#define MS_IN_SECONDS	1000
+#define US_IN_SECONDS	(MS_IN_SECONDS * 1000)
+#define NS_IN_SECONDS	(US_IN_SECONDS * 1000)
+#define US_IN_MSECONDS	1000
+#define NS_IN_MSECONDS	(1000 * US_IN_MSECONDS)
+
 #define ARRAY_SIZE(array)	(sizeof(array) / sizeof(*array))
 /* @type: type of the struct object
  * @member: member of the struct object

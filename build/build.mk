@@ -25,7 +25,7 @@ $(BIN): my_CFLAGS:=$(CFLAGS)
 # generic rules.
 $(BIN): $(OBJS) $(LIBS)
 	@$(_LD)
-	@$(CC) -o $@ $(my_LDFLAGS) $^
+	@$(CC) -o $@ $^ $(my_LDFLAGS)
 
 $(LIB_STATIC): my_INCLUDES:=$(INCLUDES)
 $(LIB_STATIC): my_CFLAGS:=$(CFLAGS)
