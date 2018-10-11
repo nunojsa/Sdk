@@ -22,10 +22,11 @@ endef
 $(BIN): my_LDFLAGS:=$(LDFLAGS)
 $(BIN): my_INCLUDES:=$(INCLUDES)
 $(BIN): my_CFLAGS:=$(CFLAGS)
+$(BIN): my_OBJS:=$(OBJS)
 # generic rules.
 $(BIN): $(OBJS) $(LIBS)
 	@$(_LD)
-	@$(CC) -o $@ $^ $(my_LDFLAGS)
+	@$(CC) -o $@ $(my_OBJS) $(my_LDFLAGS)
 
 $(LIB_STATIC): my_INCLUDES:=$(INCLUDES)
 $(LIB_STATIC): my_CFLAGS:=$(CFLAGS)

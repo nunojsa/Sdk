@@ -7,6 +7,8 @@ _AR=echo        "	AR	$(notdir $@)"
 _INSTALL=echo   "	INSTALL	$(notdir $(2))"
 _UNINSTALL=echo "	UNINSTALL $(notdir $(2))"
 
+LDFLAGS_AUX=$(shell echo $(LDFLAGS) | grep "\-l")
+
 ifeq ($(strip $(HOST_BUILD)),y)
 	OUT_OBJ_DIR:=$(OUT_DIR)/host/obj
 	OUT_BIN_DIR:=$(OUT_DIR)/host/bin
@@ -17,10 +19,30 @@ ifeq ($(strip $(HOST_BUILD)),y)
 	LD:="ld --verbose"
 	CXX:=g++
 	CPP:=cpp
+ifneq ($(strip $(LDFLAGS_AUX)),)
+LDFLAGS:=$(addprefix -L$(OUT_DIR)/host/lib ,$(LDFLAGS))
+ifeq ($(strip $(RPATH)),)
+LDFLAGS+=-Wl,-rpath=$(OUT_DIR)/host/lib
+else
+LDFLAGS+=-Wl,-rpath=$(RPATH)
+endif
+endif
 else
 	OUT_OBJ_DIR:=$(OUT_DIR)/$(TARGET_BUILD)/obj
 	OUT_BIN_DIR:=$(OUT_DIR)/$(TARGET_BUILD)/bin
 	OUT_LIB_DIR:=$(OUT_DIR)/$(TARGET_BUILD)/lib
+ifneq ($(strip $(LDFLAGS_AUX)),)
+LDFLAGS:=$(addprefix -L$(OUT_DIR)/$(TARGET_BUILD)/lib ,$(LDFLAGS))
+ifeq ($(strip $(RPATH)),)
+ifeq ($(strip $(INSTALL_LIB_DIR)),)
+LDFLAGS+=-Wl,-rpath=$(INSTALL_LIB_DIR)
+else
+LDFLAGS+=-Wl,-rpath=$(OUT_DIR)/$(TARGET_BUILD)/lib
+endif
+else
+LDFLAGS+=-Wl,-rpath=$(RPATH)
+endif
+endif
 endif
 
 ifneq ($(strip $(BIN)),)

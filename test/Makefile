@@ -3,6 +3,7 @@ BIN:=logger_test
 
 LOCAL_OBJS:=logger_test.o
 INCLUDES:=-I$(BUILD_ROOT)/src/libs/utils
+LDFLAGS:=-lutils
 
 include $(BUILD_ROOT)/build/host_build.mk
 
@@ -24,6 +25,7 @@ LIBS:=$(OUT_DIR)/host/lib/libutils.so
 
 LOCAL_OBJS:=timer_test.o
 INCLUDES:=-I$(BUILD_ROOT)/src/libs/utils -I$(BUILD_ROOT)/src/include
+LDFLAGS:=-lutils
 
 include $(BUILD_ROOT)/build/host_build.mk
 
