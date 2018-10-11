@@ -169,7 +169,7 @@ function __add_target_complete()
 {
 	local cur="${COMP_WORDS[COMP_CWORD]}";
 	local last="${COMP_WORDS[COMP_CWORD-1]}";
-	local opts=('--rootdir=' '--outdir=' '--libdir=' '--bindir=' HOST RPI);
+	local opts=('--rootdir=' '--libdir=' '--bindir=' HOST RPI);
 
 	# at this point we want to autocomplete with directories
 	if [[ "${cur}" == "=" || "${last}" == "=" ]]
