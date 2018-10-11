@@ -33,6 +33,7 @@ endif
 
 ifneq ($(strip $(LIB_DYNAMIC)),)
 LIB_DYNAMIC:=$(addprefix $(OUT_LIB_DIR)/,$(LIB_DYNAMIC))
+CFLAGS:=-fPIC
 endif
 
 ifeq ($(strip $(LOCAL_OBJS)),)
@@ -46,6 +47,6 @@ endif
 ifeq ($(strip $(LOCAL_CFLAGS)),)
 	CFLAGS+=-O2 -Werror -Wall -Wextra
 else
-	CFLAGS:=$(LOCAL_CFLAGS)
+	CFLAGS=$(LOCAL_CFLAGS)
 endif
 

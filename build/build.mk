@@ -33,6 +33,13 @@ $(LIB_STATIC): $(OBJS)
 	@$(_AR)
 	@$(AR) -rcs $@ $^
 
+$(LIB_DYNAMIC): my_LDFLAGS:=$(LDFLAGS)
+$(LIB_DYNAMIC): my_CFLAGS:=$(CFLAGS)
+$(LIB_DYNAMIC): my_INCLUDES:=$(INCLUDES)
+$(LIB_DYNAMIC): $(OBJS)
+	@$(_LD)
+	@$(CC) -shared -o $@ $^ $(my_LDFLAGS)
+
 # define a generic clean target
 ifneq ($(strip $(BIN)),)
 $(eval $(call do_clean,$(BIN),$(OBJS)))
