@@ -7,7 +7,7 @@ NC='\033[0m'
 
 # This is still an early stage meaning that there isn't
 # a clear idea on how the targets will be managed. For now add them in this array.
-# This target concept will probably change if the future by a project or device concept...
+# This target concept will probably change in the future by a project or device concept...
 TARGETS=(HOST RPI)
 
 function __include_all()
@@ -59,14 +59,12 @@ function __setup_common()
 	__create_out_dirs "${1}"
 
 	# handle rootdir
-	if [ -n "${ROOT_DIR}" ] && [ -z "${INSTALL_BIN_DIR}" ]; then
+	if [ -n "${ROOT_DIR}" ]; then
 		mkdir -p "${ROOT_DIR}/usr/bin"
-		export INSTALL_BIN_DIR="${ROOT_DIR}usr/bin/"
 	fi
 
-	if [ -n "${ROOT_DIR}" ] && [ -z "${INSTALL_LIB_DIR}" ]; then
+	if [ -n "${ROOT_DIR}" ]; then
 		mkdir -p "${ROOT_DIR}/usr/lib"
-		export INSTALL_LIB_DIR="${ROOT_DIR}usr/lib/"
 	fi
 }
 
@@ -137,25 +135,6 @@ function __process_args()
 			__check_ownerchip "${2}";
 			[ $? == 1 ] && return 1;
 			export ROOT_DIR="$(realpath "${2}")/";
-			[[ -n "${INSTALL_LIB_DIR}" && -n "${INSTALL_BIN_DIR}" ]] && { \
-				echo -e "${WHITE}[WARNING]: Rootdir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
-		;;
-		"--libdir")
-			[ ! -d "${2}" ] && { echo -e "${RED}[ERROR]: Make sure to create libdir="\"$2\""${MC}"; return 1; }
-                        __check_ownerchip "${2}";
-                        [ $? == 1 ] && return 1;
-                        export INSTALL_LIB_DIR="$(realpath ${2})/";
-			[[ -n "${ROOT_DIR}" && -n "${INSTALL_BIN_DIR}" ]] && { \
-                                echo -e "${WHITE}[WARNING]: Rootdir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
-		;;
-		"--bindir")
-			[ ! -d "${2}" ] && { echo -e "${RED}[ERROR]: Make sure to create bindir=\"$2\"${NC}"; return 1; }
-                        __check_ownerchip "${2}";
-                        [ $? == 1 ] && return 1;
-                        export INSTALL_BIN_DIR="$(realpath ${2})/";
-			[[ -n "${INSTALL_LIB_DIR}" && -n "${ROOT_DIR}" ]] && { \
-				echo -e "${WHITE}[WARNING]: Rootdir defined but useless since both bin and lib directories were explicity configured!${NC}"; }
-
 		;;
 		*)
 			echo -e "${RED}[ERROR]: Invalid key=\"${1}\"${NC}";
@@ -169,7 +148,7 @@ function __add_target_complete()
 {
 	local cur="${COMP_WORDS[COMP_CWORD]}";
 	local last="${COMP_WORDS[COMP_CWORD-1]}";
-	local opts=('--rootdir=' '--libdir=' '--bindir=' HOST RPI);
+	local opts=('--rootdir=' HOST RPI);
 
 	# at this point we want to autocomplete with directories
 	if [[ "${cur}" == "=" || "${last}" == "=" ]]
@@ -199,7 +178,7 @@ function cgrep()
 
 function mgrep()
 {
-	find . -name .git -prune -o -type f \( -name 'make.*' -o -name 'Makefile' \) -print0 | xargs -0 grep --colour -n "$@"
+	find . -name .git -prune -o -type f \( -name '*.mk' -o -name 'Makefile' \) -print0 | xargs -0 grep --colour -n "$@"
 }
 function gettop()
 {
@@ -246,8 +225,6 @@ function clean_env()
 	export TARGET_BUILD=''
 	export OUT_DIR=''
 	export ROOT_DIR=''
-	export INSTALL_LIB_DIR=''
-	export INSTALL_BIN_DIR=''
 	export AR=''
 	export AS=''
 	export LD=''
@@ -349,8 +326,6 @@ function print_env()
 	echo "LD=${LD}";
 	echo "OUT_DIR=${OUT_DIR}";
 	echo "ROOT_DIR=${ROOT_DIR}";
-	echo "INSTALL_LIB_DIR=${INSTALL_LIB_DIR}"
-	echo "INSTALL_BIN_DIR=${INSTALL_BIN_DIR}";
 }
 
 if [ "$UID" -eq "0" ]

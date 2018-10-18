@@ -53,17 +53,19 @@ distclean:
 	fi
 
 install_apps:
-	@if [ -d "$(INSTALL_BIN_DIR)" ]; then \
+	@if [ -d "$(ROOT_DIR)" ]; then \
 		$(MAKE) -C $(APPS_DIR) install; \
 	else \
-		echo -e $(WHITE)[WARNING]: INSTALL_BIN_DIR does not exist. Run help_me on your shell to see how to properly add it!$(NC); \
+		echo -e $(RED)[ERROR]: ROOT_DIR does not exist. Run help_me on your shell to see how to properly add it!$(NC); \
+		false; \
 	fi
 
 install_libs:
-	@if [ -d "$(INSTALL_LIB_DIR)" ]; then \
+	@if [ -d "$(ROOT_DIR)" ]; then \
 		$(MAKE) -C $(LIBS_DIR) install; \
 	else \
-		echo -e $(WHITE)[WARNING]: INSTALL_LIB_DIR does not exist. Run help_me on your shell to see how to properly add it!$(NC); \
+		echo -e $(RED)[ERROR]: ROOT_DIR does not exist. Run help_me on your shell to see how to properly add it!$(NC); \
+		false; \
 	fi
 
 install: install_libs install_apps

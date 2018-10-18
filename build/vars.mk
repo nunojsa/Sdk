@@ -19,30 +19,17 @@ ifeq ($(strip $(HOST_BUILD)),y)
 	LD:="ld --verbose"
 	CXX:=g++
 	CPP:=cpp
-ifneq ($(strip $(LDFLAGS_AUX)),)
-LDFLAGS:=$(addprefix -L$(OUT_DIR)/host/lib ,$(LDFLAGS))
-ifeq ($(strip $(RPATH)),)
-LDFLAGS+=-Wl,-rpath=$(OUT_DIR)/host/lib
-else
-LDFLAGS+=-Wl,-rpath=$(RPATH)
-endif
-endif
+	OUT:=host
 else
 	OUT_OBJ_DIR:=$(OUT_DIR)/$(TARGET_BUILD)/obj
 	OUT_BIN_DIR:=$(OUT_DIR)/$(TARGET_BUILD)/bin
 	OUT_LIB_DIR:=$(OUT_DIR)/$(TARGET_BUILD)/lib
+	OUT:=$(TARGET_BUILD)
+endif
+
 ifneq ($(strip $(LDFLAGS_AUX)),)
-LDFLAGS:=$(addprefix -L$(OUT_DIR)/$(TARGET_BUILD)/lib ,$(LDFLAGS))
-ifeq ($(strip $(RPATH)),)
-ifeq ($(strip $(INSTALL_LIB_DIR)),)
-LDFLAGS+=-Wl,-rpath=$(INSTALL_LIB_DIR)
-else
-LDFLAGS+=-Wl,-rpath=$(OUT_DIR)/$(TARGET_BUILD)/lib
-endif
-else
-LDFLAGS+=-Wl,-rpath=$(RPATH)
-endif
-endif
+LDFLAGS:=$(addprefix -L$(OUT_DIR)/$(OUT)/lib ,$(LDFLAGS))
+LDFLAGS+=-Wl,-rpath='$$ORIGIN/:$$ORIGIN/../lib/'
 endif
 
 ifneq ($(strip $(BIN)),)
