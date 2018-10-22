@@ -28,8 +28,8 @@ else
 endif
 
 ifneq ($(strip $(LDFLAGS_AUX)),)
-LDFLAGS:=$(addprefix -L$(OUT_DIR)/$(OUT)/lib ,$(LDFLAGS))
 LDFLAGS+=-Wl,-rpath='$$ORIGIN/:$$ORIGIN/../lib/'
+LDFLAGS+=$(addprefix -L$(OUT_DIR)/$(OUT)/lib ,$(LDFLAGS))
 endif
 
 ifneq ($(strip $(BIN)),)
@@ -43,6 +43,17 @@ endif
 ifneq ($(strip $(LIB_DYNAMIC)),)
 LIB_DYNAMIC:=$(addprefix $(OUT_LIB_DIR)/,$(LIB_DYNAMIC))
 CFLAGS:=-fPIC
+# if SO_VERSION is given, soname flag is added and prepare
+# to create symlinks. It follows the linux way, the link name
+# (libname without any version info after .so) symlinks against
+# soname and soname against the real lib. Also soname is libname.so.major
+ifneq ($(strip $(SO_VERSION)),)
+MAJOR:=$(shell echo $(SO_VERSION) | cut -d "." -f1)
+SONAME:=$(notdir $(LIB_DYNAMIC)).$(MAJOR)
+LIB_LINK:=$(notdir $(LIB_DYNAMIC))
+LIB_DYNAMIC:=$(LIB_DYNAMIC).$(SO_VERSION)
+LDFLAGS+=-Wl,-soname=$(SONAME)
+endif
 endif
 
 ifeq ($(strip $(LOCAL_OBJS)),)

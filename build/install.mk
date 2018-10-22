@@ -26,6 +26,13 @@ uninstall: uninstall_$(notdir $(LIB_STATIC))
 else ifneq ($(strip $(LIB_DYNAMIC)),)
 $(eval $(call do_x_install,install,$(LIB_DYNAMIC),$(ROOT_DIR)usr/lib))
 $(eval $(call do_x_install,uninstall,$(notdir $(LIB_DYNAMIC)),$(ROOT_DIR)usr/lib))
+install: my_LINK_LIB:=$(LIB_LINK)
+install: my_SONAME:=$(SONAME)
 install: install_$(LIB_DYNAMIC)
+	$(call do_ld_symlink,$(ROOT_DIR)/usr/lib,$(my_SONAME),$(my_LINK_LIB))
+uninstall: my_LINK_LIB:=$(LIB_LINK)
+uninstall: my_SONAME:=$(SONAME)
 uninstall: uninstall_$(notdir $(LIB_DYNAMIC))
+	@# clean the symlinks if there
+	$(call do_clean_ld_symlink,$(ROOT_DIR)/usr/lib,$(my_LINK_LIB),$(my_SONAME))
 endif

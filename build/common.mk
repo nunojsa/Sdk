@@ -27,3 +27,25 @@ $(eval util:=$(shell hash $(1) 2>/dev/null || echo "N"))
 $(eval message:=$(shell echo -e $(RED)$(1) not found in the PATH! Is it installed?!$(NC)))
 $(if $(util),$(error $(message)),)
 endef
+
+# It handles .so symlinks. It follows the linux way, the link name
+# (libname without any version info after .so) symlinks against
+# soname and soname against the real lib. Also soname is libname.so.major
+# (1): The directory where the links should be created
+# (2): The soname
+# (3): The link lib symlink
+define do_ld_symlink
+@cd $(1) 1>/dev/null; \
+ln -sf $(2) $(3); \
+ldconfig -nN .; \
+cd - 1>/dev/null;
+endef
+
+# It handles the removal of .so symlinks
+# (1): The directory where the links are
+# (2): Soname symlink
+# (3): Link lib symlink
+define do_clean_ld_symlink
+@rm $(1)/$(2) 2>/dev/null
+@rm $(1)/$(3) 2>/dev/null
+endef

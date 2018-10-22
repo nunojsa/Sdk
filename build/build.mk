@@ -37,9 +37,12 @@ $(LIB_STATIC): $(OBJS)
 $(LIB_DYNAMIC): my_LDFLAGS:=$(LDFLAGS)
 $(LIB_DYNAMIC): my_CFLAGS:=$(CFLAGS)
 $(LIB_DYNAMIC): my_INCLUDES:=$(INCLUDES)
+$(LIB_DYNAMIC): my_LINK_LIB:=$(LIB_LINK)
+$(LIB_DYNAMIC): my_SONAME:=$(SONAME)
 $(LIB_DYNAMIC): $(OBJS)
 	@$(_LD)
 	@$(CC) -shared -o $@ $^ $(my_LDFLAGS)
+	$(call do_ld_symlink,`dirname $@`,$(my_SONAME),$(my_LINK_LIB))
 
 # define a generic clean target
 ifneq ($(strip $(BIN)),)
@@ -50,7 +53,11 @@ $(eval $(call do_clean,$(LIB_STATIC),$(OBJS)))
 clean: clean_$(LIB_STATIC)
 else ifneq ($(strip $(LIB_DYNAMIC)),)
 $(eval $(call do_clean,$(LIB_DYNAMIC),$(OBJS)))
+clean: my_LINK_LIB:=$(LIB_LINK)
+clean: my_SONAME:=$(SONAME)
 clean: clean_$(LIB_DYNAMIC)
+	@# clean the symlinks if there
+	$(call do_clean_ld_symlink,$(OUT_LIB_DIR),$(my_SONAME),$(my_LINK_LIB))
 endif
 
 # pattern rules
