@@ -241,7 +241,14 @@ function clean_env()
 
 function help_me()
 {
-	echo "no help for you yet!"
+	echo -e "${BLUE}Availabe commands:${NC}"
+	echo -e "${WHITE} - cgrep: Used like grep, but only greps on c and cpp files.${NC}"
+	echo -e "${WHITE} - mgrep: Used like grep, but only greps in Makefiles and .mk.${NC}"
+	echo -e "${WHITE} - croot: Change directory to "\"${BUILD_ROOT}\"".${NC}"
+	echo -e "${WHITE} - clean_env: Clear all env variables.${NC}"
+	echo -e "${WHITE} - print_env: Print all env variables.${NC}"
+	echo -e "${WHITE} - add_compilable: Add a compilations unit. Expects a valid path as argument.${NC}"
+	echo -e "${WHITE} - add_target_build: Add a target to build. Type tab for autocomplete.${NC}"
 }
 
 function add_compilable()
@@ -291,6 +298,7 @@ function add_target_build()
 		fi
         done
 
+	[ -z "${target}" ] && { echo -e "${RED}[ERROR]: No target specified...${NC}"; clean_env; return 1; }
 	[ "${error}" == "y" ] && { clean_env; return 1; }
 
 	case "${target}" in
@@ -303,7 +311,7 @@ function add_target_build()
 			echo "RPI is not yet supportted";
 		;;
 		*)
-			echo -e "${RED}[ERROR]: Unknown TARGET to build for:${1}!${NC}";
+			echo -e "${RED}[ERROR]: Unknown TARGET to build for:${target}!${NC}";
 			clean_env;
 			return 1;
 		;;

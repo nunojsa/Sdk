@@ -71,4 +71,27 @@ install_libs:
 install: install_libs install_apps
 
 help:
-	@echo "No help for you yet!!"
+	@echo Cleaning targets:
+	@echo "	distclean:	Completly remove \"$(OUT_DIR)\"";
+	@echo "	clean:		Clean all object files, libs, binaries and test binaries";
+	@echo "	clean_src:	Clean all object files, libs and binaries;"
+	@echo "	clean_apps:	Clean all target applications;"
+	@echo "	clean_libs:	Clean all target libs;"
+	@echo "	clean_test:	Clean all test applications."
+	@echo ""
+	@echo "Build targets:"
+	@echo "	all:		Default target. Buidls all the artifacts;"
+	@echo "	src:		Build all libs and applications;"
+	@echo "	apps:		Build all applications;"
+	@echo "	libs:		Build all libs;"
+	@echo "	test:		Build all test applications."
+	@echo ""
+	@echo "Install targets: Only available when ROOT_DIR is defined. Type help_me..."
+	@if [ -d "$(ROOT_DIR)" ]; then \
+		echo "	install:	Install all dynamic libs and apps in \"$(ROOT_DIR)usr\""; \
+		echo "	install_apps:	Install all apps in \"$(ROOT_DIR)usr/bin\""; \
+		echo "	install_libs:	Install all libs in \"$(ROOT_DIR)usr/libs\""; \
+		echo "	uninstall:	Uinstall all dynamic libs and apps in \"$(ROOT_DIR)usr\""; \
+		echo "	uninstall_apps:	Uinstall all apps in \"$(ROOT_DIR)usr/bin\""; \
+		echo "	uninstall_libs:	Uinstall all libs in \"$(ROOT_DIR)usr/libs\""; \
+	fi
