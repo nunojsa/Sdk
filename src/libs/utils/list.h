@@ -5,6 +5,11 @@
  * sure that concurrent accesses to the same list are safe. Also, the
  * implementation does minimal checks regarding null pointers. It's also
  * up to the user to deal with it...
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
+ */
  */
 #ifndef	LIST_H
 #define LIST_H
