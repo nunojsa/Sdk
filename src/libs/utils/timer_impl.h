@@ -9,31 +9,27 @@ typedef enum {
 	TIMER_MAX,
 } timer_mode;
 
-struct timer {
-	/*timer name*/
-	char *id;
-	/*callback function*/
-	void (*func)(void *priv_data);
-	/*user private data*/
-	void *priv_data;
-	/*must not be touched*/
-	void *__priv;
-};
+struct timer;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 /*
- * @param new_timer Struct timer
- * @param mode Mode. Either TIMER_ONESHOT or TIMER_PERIODIC
+ * @param name Timer name
+ * @param mode Either TIMER_ONESHOT or TIMER_PERIODIC
+ * @param func callback function
+ * @param priv_data private data
  *
- * @return int 0 on success, otherwise a standard Linux error
- *         defined in errno-base.
+ * @note if @priv_data is NULL, the newly created timer is passed
+ * 	    as agrgument of @func.
+ *
+ * @return struct timer* NULL on error
  *
  * @brief Create a new timer for operation. The timer callback and
- *	  @mode must be properly defined otherwise -EINVAL is returned.
+ *	  @mode must be properly defined otherwise NULL is returned.
  */
-int timer_new(struct timer *new_timer, const timer_mode mode);
+struct timer *timer_new(const char *name, const timer_mode mode,
+			void (*func)(void *priv_data), void *priv_data);
 /*
  * @param timer Struct timer
  *
@@ -43,7 +39,7 @@ int timer_new(struct timer *new_timer, const timer_mode mode);
  * @brief Destroy the given timer
  * @note @timer cannot be NULL
  */
-int timer_destroy(const struct timer *timer);
+int timer_destroy(struct timer *timer);
 /*
  * @param timer Struct timer
  *
@@ -85,7 +81,16 @@ int timer_fire(const struct timer *timer, u64 expire);
  * @note @timer cannot be NULL
  */
 int timer_stop(const struct timer *timer);
-
+/*
+ * @param timer  Struct timer
+ * @return const char* Timer name
+ */
+const char *timer_get_name(const struct timer *timer);
+/*
+ * @param timer  Struct timer
+ * @return timer_mode
+ */
+timer_mode timer_get_mode(const struct timer *timer);
 #ifdef __cplusplus
 }
 #endif

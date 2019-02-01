@@ -10,17 +10,10 @@ static int stop = FALSE;
 static void timer_1_cb(void *priv);
 static void timer_2_cb(void *priv);
 
-struct timer oneshot = {
-	.id = "TIMER_ONESHOT",
-	.func = timer_1_cb,
-	.priv_data = &oneshot,
-};
+struct timer *oneshot = NULL;
+struct timer *periodic = NULL;
 
-struct timer periodic = {
-	.id = "TIMER_PERIODIC",
-	.func = timer_2_cb,
-	.priv_data = &periodic,
-};
+int n = 0;
 
 static void timer_1_cb(void *priv)
 {
@@ -31,13 +24,14 @@ static void timer_1_cb(void *priv)
 		log_info("Exiting timer_1.\n");
 		stop = TRUE;
 	} else {
-		u64 ms = timer_gettime_ms(&periodic);
+		u64 ms = timer_gettime_ms(periodic);
 
+		log_info("Here...\n");
 		log_debug("Re-arming timer \"%s\". Periodic time: %ld...\n",
-				oneshot->id, ms);
+				timer_get_name(oneshot), ms);
 		if (i == 2) {
 			log_debug("Stoping periodic timer...\n");
-			if (timer_stop(&periodic) < 0) {
+			if (timer_stop(periodic) < 0) {
 				log_error("Failed to stop periodic timer...\n");
 			}
 		}
@@ -48,47 +42,47 @@ static void timer_1_cb(void *priv)
 
 static void timer_2_cb(void *priv)
 {
-	struct timer *periodic = (struct timer *)priv;
+	int *here = (int *)priv;
 
-	log_debug("Timer \"%s\" expired\n", periodic->id);
+	log_debug("Timer \"%s\" expired, cnt %d\n", timer_get_name(periodic), (*here)++);
 }
 
 int main(void)
 {
-	int ret = 0;
-
 	logger_init(NULL, 0, LOG_LEV_DEBUG);
 
-	ret = timer_new(&oneshot, TIMER_ONESHOT);
-	if (ret < 0) {
+	log_info("Create oneshot\n");
+	oneshot = timer_new("TIMER_ONESHOT", TIMER_ONESHOT, timer_1_cb, NULL);
+	if (!oneshot) {
 		log_error("Failed to create the timer\n");
 		return -1;
 	}
 
+	log_info("Created oneshot\n");
 	/*should not be printed*/
-	if (timer_pending(&oneshot) > 0) {
+	if (timer_pending(oneshot) > 0) {
 		log_info("Oneshot is not pending...\n");
 	}
 
 	/*3 seconds*/
-	if (timer_fire(&oneshot, 3 * MS_IN_SECONDS)) {
+	if (timer_fire(oneshot, 3 * MS_IN_SECONDS)) {
 		log_error("Failed to start the timer\n");
 		return -1;
 	}
 
-	ret = timer_new(&periodic, TIMER_PERIODIC);
-	if (ret < 0) {
+	periodic = timer_new("TIMER_PERIODIC", TIMER_PERIODIC, timer_2_cb, &n);
+	if (!periodic) {
 		log_error("Failed to create the timer\n");
 		return -1;
 	}
 
 	/*should be printed*/
-	if (timer_pending(&oneshot) > 0) {
+	if (timer_pending(oneshot) > 0) {
 		log_info("Oneshot is now pending...\n");
 	}
 
 	/*4 seconds periodic*/
-	if (timer_fire(&periodic, 3 * MS_IN_SECONDS)) {
+	if (timer_fire(periodic, 1 * MS_IN_SECONDS)) {
 		log_error("Failed to start the timer\n");
 		return -1;
 	}
@@ -97,8 +91,8 @@ int main(void)
 		sleep(1);
 	}
 
-	if (timer_destroy(&oneshot) < 0 ||
-	    timer_destroy(&periodic)) {
+	if (timer_destroy(oneshot) < 0 ||
+	    timer_destroy(periodic)) {
 		log_error("Failed to destroy one of the timers...\n");
 	}
 

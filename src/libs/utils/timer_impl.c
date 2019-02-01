@@ -4,6 +4,10 @@
  * can be defined. ONESHOT timer which will run only once (the user can
  * still re-arm it of the callback function). PERIODIC timer will re-run
  * automatically after the timer callback function.
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms and conditions of the GNU General Public License,
+ * version 2, as published by the Free Software Foundation.
  */
 #include <signal.h>
 #include <time.h>
@@ -26,7 +30,15 @@
 #define timer_trace(fmt, arg...)
 #endif
 
-struct timer_private {
+#define TIMER_NAME_MAX	256
+
+struct timer {
+	/*timer name*/
+	char id[TIMER_NAME_MAX];
+	/*callback function*/
+	void (*func)(void *priv_data);
+	/*user private data*/
+	void *priv_data;
 	/*timer id*/
 	timer_t timerid;
 	/*timer mode*/
@@ -50,19 +62,13 @@ static void timer_internal_cb(union sigval val)
 
 int timer_stop(const struct timer *timer)
 {
-	struct timer_private *priv = NULL;
 	struct itimerspec value;
 
 	assert(timer != NULL);
 
-	priv = (struct timer_private *)timer->__priv;
-	if (unlikely(!priv)) {
-		return -ENODEV;
-	}
-
 	memset(&value, 0, sizeof(struct itimerspec));
 
-	if (timer_settime(priv->timerid, 0, &value, NULL) < 0) {
+	if (timer_settime(timer->timerid, 0, &value, NULL) < 0) {
 		return -errno;
 	}
 
@@ -71,17 +77,11 @@ int timer_stop(const struct timer *timer)
 
 u64 timer_gettime_ms(const struct timer *timer)
 {
-	struct timer_private *priv = NULL;
 	struct itimerspec value;
 
 	assert(timer != NULL);
 
-	priv = (struct timer_private *)timer->__priv;
-	if (unlikely(!priv)) {
-		return -ENODEV;
-	}
-
-	if (timer_gettime(priv->timerid, &value) < 0) {
+	if (timer_gettime(timer->timerid, &value) < 0) {
 		return -errno;
 	}
 
@@ -94,25 +94,19 @@ u64 timer_gettime_ms(const struct timer *timer)
 
 int timer_fire(const struct timer *timer, u64 expire)
 {
-	struct timer_private *priv = NULL;
 	struct itimerspec value = { {0, 0}, {0, 0} };
 
 	assert(timer != NULL);
 
-	priv = (struct timer_private *)timer->__priv;
-	if (unlikely(!priv)) {
-		return -ENODEV;
-	}
-
 	value.it_value.tv_sec = expire/MS_IN_SECONDS;
 	value.it_value.tv_nsec = (expire % MS_IN_SECONDS) * NS_IN_MSECONDS;
 
-	if (priv->mode == TIMER_PERIODIC) {
+	if (timer->mode == TIMER_PERIODIC) {
 		value.it_interval.tv_sec = expire/MS_IN_SECONDS;
 		value.it_interval.tv_nsec = (expire % MS_IN_SECONDS) * NS_IN_MSECONDS;
 	}
 
-	if (timer_settime(priv->timerid, 0, &value, NULL) < 0) {
+	if (timer_settime(timer->timerid, 0, &value, NULL) < 0) {
 		return -errno;
 	}
 
@@ -121,79 +115,88 @@ int timer_fire(const struct timer *timer, u64 expire)
 
 int timer_pending(const struct timer *timer)
 {
-	struct timer_private *priv = NULL;
 	struct itimerspec value = { {0, 0}, {0, 0} };
 
 	assert(timer != NULL);
 
-	priv = (struct timer_private *)timer->__priv;
-	if (unlikely(!priv)) {
-		return -ENODEV;
-	}
-
-	if (timer_gettime(priv->timerid, &value) < 0) {
+	if (timer_gettime(timer->timerid, &value) < 0) {
 		return -errno;
 	}
 
 	return (value.it_value.tv_sec != 0 || value.it_value.tv_nsec != 0);
 }
 
-int timer_destroy(const struct timer *timer)
+int timer_destroy(struct timer *timer)
 {
-	struct timer_private *priv = NULL;
 	int ret = 0;
 
 	assert(timer != NULL);
 
-	priv = (struct timer_private *)timer->__priv;
-	if (unlikely(!priv)) {
-		return -ENODEV;
-	}
-
-	ret = timer_delete(priv->timerid);
+	ret = timer_delete(timer->timerid);
 	if (ret < 0) {
 		return -errno;
 	}
 
-	free(priv);
+	free(timer);
 	return ret;
 }
 
-int timer_new(struct timer *new_timer, const timer_mode mode)
+inline timer_mode timer_get_mode(const struct timer *timer)
 {
-	int ret = -1;
-	struct timer_private *priv = NULL;
+	assert(timer != NULL);
+
+	return timer->mode;
+}
+
+inline const char *timer_get_name(const struct timer *timer)
+{
+	assert(timer != NULL);
+
+	return timer->id;
+}
+
+struct timer *timer_new(const char *name, const timer_mode mode,
+		void (*func)(void *priv_data), void *priv_data)
+{
+	struct timer *new = NULL;
 	struct sigevent event;
 
 	memset(&event, 0, sizeof(event));
 
-	if (!new_timer || !new_timer->func || mode >= TIMER_MAX) {
+	if (!func || mode >= TIMER_MAX) {
 		timer_debug("Invalid arguments...\n");
-		return -EINVAL;
+		return NULL;
 	}
 
-	priv = (struct timer_private *)malloc(sizeof(struct timer_private));
-	if (!priv) {
+	new = (struct timer *)malloc(sizeof(struct timer));
+	if (!new) {
 		timer_debug("Failed to allocate memory...\n");
-		return -ENOMEM;
+		return NULL;
 	}
 	/*setup event*/
 	event.sigev_notify = SIGEV_THREAD;
 	event.sigev_notify_function = timer_internal_cb;
-	event.sigev_value.sival_ptr = (void *)new_timer;
+	event.sigev_value.sival_ptr = (void *)new;
 
 	/*create the timer*/
-	if (timer_create(CLOCK_MONOTONIC, &event, &priv->timerid) < 0) {
+	if (timer_create(CLOCK_MONOTONIC, &event, &new->timerid) < 0) {
 		timer_debug("Failed to create the timer...\n");
-		ret = -errno;
 		goto fail;
 	}
+
+	if (name != NULL) {
+		strncpy(new->id, name, sizeof(new->id) - 1);
+	}
+
+	/*set cb*/
+	new->func = func;
 	/*set mode*/
-	priv->mode = mode;
+	new->mode = mode;
 	/*set private data*/
-	new_timer->__priv = priv;
-	return 0;
+	new->priv_data = (priv_data != NULL) ? priv_data : new;
+
+	return new;
 fail:
-	free(priv);
-	return ret;
+	free(new);
+	return NULL;
 }
