@@ -1,16 +1,10 @@
 /*
  * Logger implementation.
  *
- * This logger is not meant to be thread safe. Is an apllication logger, not a
+ * This logger is not meant to be thread safe. It is an apllication logger, not a
  * system one. For an application logger, looks extreme to me to have locks
- * inside,slowing down the process. The configuration functions
- * (like logger_set_log_level) are not meant to be called by different threads.
- * They should be called only from the same context. Only logger_set_log_dest
- * should be called after starting the logger utility,if stdout is not
- * the desired destination.
- * In some extreme situations (when log dest is a file), it might happen
- * that a log file is lost when handling the case where the file has grown
- * to big (check logger_handle_file_max).
+ * inside, slowing down the process. There is only a lock when the destination is a file,
+ * so that a log file is not lost.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,9 +14,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include "logger.h"
 #include <stdarg.h>
 #include <stdint.h>
+#include <pthread.h>
+#include "logger.h"
 
 #define MAX_BUFFER_LEN		512
 /*50MB*/
@@ -33,7 +28,7 @@ struct logger_modules {
 	struct logger_modularized modules;
 };
 
-struct logger_struct {
+static struct logger_struct {
 	char path[MAX_BUFFER_LEN];
 	FILE *file;
 	int file_size;
@@ -43,8 +38,10 @@ struct logger_struct {
 	struct logger_modules modules[MODULE_MAX_NUMBER];
 } logger_ctl;
 
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
 /*must be in accordance with the enum...*/
-const char *levelStr[] = {
+static const char *levelStr[] = {
 	"[FATAL]",
 	"[ERROR]",
 	"[WARN]",
@@ -53,7 +50,7 @@ const char *levelStr[] = {
 	"[TRACE]",
 };
 
-const char *destStr[] = {
+static const char *destStr[] = {
 	"[STDOUT]",
 	"[FILE]",
 };
@@ -115,10 +112,12 @@ static uint8_t logger_get_module_idx(const int module)
  */
 static int logger_handle_file_max(void)
 {
-	int len = strlen(logger_ctl.path);
-	int a_len = strlen(".old");
-	char *new_path = (char *)malloc(len + a_len + 1);
+	int len = 0;
+	int a_len = 4; //.old size
+	char *new_path = NULL;
 
+	len = strlen(logger_ctl.path);
+	new_path = (char *)malloc(len + a_len + 1);
 	if (new_path == NULL) {
 		perror("Failed to allocate memory for the new filename");
 		/*just loose the old log in this case...*/
@@ -136,25 +135,14 @@ static int logger_handle_file_max(void)
 	}
 
 	free(new_path);
-	/* let's just reopen the file for writing.
-	 * The logger is not meant to be thread safe. It can happen
-	 * in an extreme case where 2 threads concurrently call this function
-	 * that a log file is lost. As for now, we just live with this
-	 * possibility, since it looks extreme to have locks in an
-	 * application based logger. Still, the logger should not crash and,
-	 * that is why we check for a non null pointer here, preventing
-	 * the case where 2 concurrent threads call the function and the 1st
-	 * one actually fails in freopen leaving a null ptr for the 2nd thread.
-	 */
+	/*let's just reopen the file for writing.*/
 reopen:
-	if (logger_ctl.file == NULL)
-		return -1;
-
 	logger_ctl.file = freopen(logger_ctl.path, "w", logger_ctl.file);
 	if (logger_ctl.file == NULL) {
 		logger_err("Failed to reopen the file. Setting console as dest\n");
 		/*fallback to console logging...*/
 		logger_ctl.log_dest = LOG_DEST_STDOUT;
+		logger_ctl.file_size = 0;
 		return -1;
 	}
 
@@ -188,6 +176,8 @@ void logger_close(void)
 	if (logger_ctl.file && fileno(logger_ctl.file) != -1) {
 		fclose(logger_ctl.file);
 	}
+
+	pthread_mutex_destroy(&lock);
 }
 
 void logger_init(struct logger_modularized *logger_modules,
@@ -250,6 +240,11 @@ void logger_set_log_dest(const int dest, const char *path)
 				logger_err("Filename to big or not null terminated!!\n");
 				return;
 			}
+			/*If it's the same file, let's continue where we stop...*/
+			if (!strcmp(path, logger_ctl.path)) {
+				goto change_dest;
+			}
+
 			/*close previous streams (if opened)...*/
 			if (logger_ctl.file && fileno(logger_ctl.file) != -1) {
 				fclose(logger_ctl.file);
@@ -266,7 +261,7 @@ void logger_set_log_dest(const int dest, const char *path)
 			logger_err("Unhandled destination, %d\n", dest);
 			return;
 		}
-
+change_dest:
 		logger_ctl.log_dest = dest;
 	}
 }
@@ -313,15 +308,28 @@ void logger(const int level, const char *file, const int line,
 	}
 
 	if (logger_ctl.log_dest == LOG_DEST_FILE) {
-		stream = logger_ctl.file;
-		logger_ctl.file_size += len;
-		if (logger_ctl.file_size >= MAX_FILE_SIZE) {
-			if (logger_handle_file_max() < 0) {
-				stream = stdout;
-			} else {
-				logger_ctl.file_size = len;
+		/* This lock here is to prevent losing a log file when
+		 * logger_handle_file_max() is called from concurrent threads.
+		 * The next condition is usefull because with it, we can keep
+		 * this lock inside the LOG_DEST_FILE case. @logger_ctl.file can
+		 * be NULL in the case 2 concurrent threads get inside this
+		 * condition (logger_ctl.log_dest == LOG_DEST_FILE) and the
+		 * first to grab the lock failed in the logger_handle_file_max()
+		 * call which means we are left with NULL in @logger_ctl.file.
+		 */
+		pthread_mutex_lock(&lock);
+		if (logger_ctl.file != NULL) {
+			stream = logger_ctl.file;
+			logger_ctl.file_size += len;
+			if (logger_ctl.file_size >= MAX_FILE_SIZE) {
+				if (logger_handle_file_max() < 0) {
+					stream = stdout;
+				} else {
+					logger_ctl.file_size = len;
+				}
 			}
 		}
+		pthread_mutex_unlock(&lock);
 	}
 
 	fprintf(stream, "%s", buffer);

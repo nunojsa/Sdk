@@ -29,7 +29,7 @@ int main (void)
 		{LOG_TEST_3, "TEMPERATURE"},
 	};
 	struct sigaction sig;
-	char const *msg = "I just want to create a big string...and make the file grown!";
+	char const *msg = "I just want to create a big string...and make the file grown!\n";
 	int test_3 = 5;
 	int test_4 = 6;
 
@@ -44,7 +44,7 @@ int main (void)
 	logger_set_log_level(LOG_LEV_TRACE);
 	log_trace("Tracing now...\n");
 	logger_set_log_dest(LOG_DEST_FILE, "file.txt");
-	logger_set_log_level(LOG_LEV_WARN);
+	logger_set_log_level(LOG_LEV_INFO);
 	logger_print_all();
 	/*setup CTRL-C*/
 	sig.sa_handler = exit_loop;
