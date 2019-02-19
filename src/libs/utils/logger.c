@@ -17,6 +17,9 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <limits.h>
+#include <errno.h>
 #include "logger.h"
 
 #define MAX_BUFFER_LEN		512
@@ -29,7 +32,7 @@ struct logger_modules {
 };
 
 static struct logger_struct {
-	char path[MAX_BUFFER_LEN];
+	char path[NAME_MAX];
 	FILE *file;
 	int file_size;
 	int curr_level;
@@ -75,6 +78,7 @@ static uint8_t logger_modules_init(struct logger_modularized *logger_modules,
 	if (modules_cnt >= MODULE_MAX_NUMBER) {
 		return 0;
 	}
+
 	for (; cnt < modules_cnt; cnt++) {
 		logger_ctl.modules[cnt].curr_level = level;
 		memcpy(&logger_ctl.modules[cnt].modules,
@@ -113,7 +117,7 @@ static uint8_t logger_get_module_idx(const int module)
 static int logger_handle_file_max(void)
 {
 	int len = 0;
-	int a_len = 4; //.old size
+	int a_len = strlen(".old");
 	char *new_path = NULL;
 
 	len = strlen(logger_ctl.path);
@@ -129,17 +133,24 @@ static int logger_handle_file_max(void)
 	strcpy(new_path, logger_ctl.path);
 	strcat(new_path, ".old");
 
+	/*sync the kernel buffers to the disk*/
+	fsync(fileno(logger_ctl.file));
 	/*let's rename the file now*/
 	if (rename(logger_ctl.path, new_path) < 0) {
 		perror("Failed to rename the log file");
 	}
-
+	/*@note: To really make sure that everything is synced
+	 * we should also call fsync on the directory of the file. Although
+	 * logs are important, it's not really critical data. So, as compromise,
+	 * only the file itself is synced to safe storage.
+	 */
 	free(new_path);
 	/*let's just reopen the file for writing.*/
 reopen:
 	logger_ctl.file = freopen(logger_ctl.path, "w", logger_ctl.file);
 	if (logger_ctl.file == NULL) {
-		logger_err("Failed to reopen the file. Setting console as dest\n");
+		logger_err("Failed to reopen the file: %s. Setting console as dest\n",
+			   strerror(errno));
 		/*fallback to console logging...*/
 		logger_ctl.log_dest = LOG_DEST_STDOUT;
 		logger_ctl.file_size = 0;
@@ -235,14 +246,15 @@ void logger_set_log_dest(const int dest, const char *path)
 				return;
 			}
 
-			maxlen = strnlen(path, MAX_BUFFER_LEN);
-			if (maxlen == MAX_BUFFER_LEN) {
-				logger_err("Filename to big or not null terminated!!\n");
-				return;
-			}
 			/*If it's the same file, let's continue where we stop...*/
 			if (!strcmp(path, logger_ctl.path)) {
 				goto change_dest;
+			}
+
+			maxlen = strnlen(path, NAME_MAX);
+			if (maxlen == NAME_MAX) {
+				logger_err("Filename to big or not null terminated!!\n");
+				return;
 			}
 
 			/*close previous streams (if opened)...*/
@@ -304,7 +316,7 @@ void logger(const int level, const char *file, const int line,
 	}
 
 	if (len < MAX_BUFFER_LEN) {
-		vsnprintf(&buffer[len], MAX_BUFFER_LEN-len, fmt, ap);
+		len += vsnprintf(&buffer[len], MAX_BUFFER_LEN-len, fmt, ap);
 	}
 
 	if (logger_ctl.log_dest == LOG_DEST_FILE) {
@@ -321,6 +333,7 @@ void logger(const int level, const char *file, const int line,
 		if (logger_ctl.file != NULL) {
 			stream = logger_ctl.file;
 			logger_ctl.file_size += len;
+
 			if (logger_ctl.file_size >= MAX_FILE_SIZE) {
 				if (logger_handle_file_max() < 0) {
 					stream = stdout;
@@ -333,6 +346,7 @@ void logger(const int level, const char *file, const int line,
 	}
 
 	fprintf(stream, "%s", buffer);
+	/*flush the stdio buffers to the kernel*/
 	fflush(stream);
 
 	va_end(ap);
