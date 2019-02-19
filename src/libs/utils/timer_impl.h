@@ -21,7 +21,7 @@ extern "C" {
  * @param priv_data private data
  *
  * @note if @priv_data is NULL, the newly created timer is passed
- * 	    as agrgument of @func.
+ * 	    as argument of @func.
  *
  * @return struct timer* NULL on error
  *
