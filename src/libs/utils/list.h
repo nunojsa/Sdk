@@ -10,7 +10,6 @@
  * under the terms and conditions of the GNU General Public License,
  * version 2, as published by the Free Software Foundation.
  */
- */
 #ifndef	LIST_H
 #define LIST_H
 
