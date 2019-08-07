@@ -45,6 +45,6 @@ endef
 # (2): Soname symlink
 # (3): Link lib symlink
 define do_clean_ld_symlink
-@rm $(1)/$(2) 2>/dev/null
-@rm $(1)/$(3) 2>/dev/null
+@rm $(1)/$(2) 2>/dev/null || true
+@rm $(1)/$(3) 2>/dev/null || true
 endef
