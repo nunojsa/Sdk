@@ -23,9 +23,8 @@ endif
 # used to check if some utility (eg: gcc) is present on
 # the host system. It assumes that the utility is on the PATH env variable...
 define check_host_utility
-$(eval util:=$(shell hash $(1) 2>/dev/null || echo "N"))
-$(eval message:=$(shell echo -e $(RED)$(1) not found in the PATH! Is it installed?!$(NC)))
-$(if $(util),$(error $(message)),)
+$(if $(shell which PATH=$(PATH) $(1)),,\
+$(error $(shell echo -e $(RED)$(1) not found in the PATH! Is it installed?!$(NC))))
 endef
 
 # It handles .so symlinks. It follows the linux way, the link name
